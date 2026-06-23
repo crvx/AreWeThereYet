@@ -1,0 +1,5 @@
+/.project
+*.zip
+bin/
+obj/
+KSP_Data
