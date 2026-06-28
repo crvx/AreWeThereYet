@@ -16,15 +16,15 @@ Click it to open the "Are We There Yet?" window, click again to close. The task 
 
 ![Window overview](Images/awtywindow.png)
 
-A **Show completed** checkbox at the top of the window toggles display of completed tasks. Incomplete tasks are marked with a red bullet (•), completed ones with a green bullet (•).
-
-A **destination filter** dropdown lets you narrow the list to tasks for a specific planet or moon. Selecting a planet also shows tasks for all its moons.
-
 Colored circles before each task indicate the destination body:
 - One circle (●) for a planet or the Sun — the circle color matches the body's orbit
 - Two circles (● ●) for a moon — the left circle is the parent planet, the right circle is the moon
 
 Colors are defined in `Colors.cfg` and can be customized for any body.
+
+A **Show completed** checkbox at the top of the window toggles display of completed tasks. Incomplete tasks are marked with a red bullet (•), completed ones with a green bullet (•).
+
+A **destination filter** dropdown lets you narrow the list to tasks for a specific planet or moon. Selecting a planet also shows tasks for all its moons.
 
 ![Destination filter dropdown](Images/dropdown.png)
 
