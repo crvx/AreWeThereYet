@@ -11,6 +11,7 @@ mkdir -p "${TEMP}/GameData/AreWeThereYet/Textures"
 
 cp AreWeThereYet/bin/Release/AreWeThereYet.dll "${TEMP}/GameData/AreWeThereYet/Plugins/"
 cp GameData/AreWeThereYet/Textures/*.png "${TEMP}/GameData/AreWeThereYet/Textures/" 2>/dev/null || true
+cp GameData/AreWeThereYet/Colors.cfg "${TEMP}/GameData/AreWeThereYet/"
 cp README.md LICENSE "${TEMP}/GameData/AreWeThereYet/"
 
 cd "${TEMP}"

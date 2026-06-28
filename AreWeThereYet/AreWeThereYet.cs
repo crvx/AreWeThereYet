@@ -44,9 +44,9 @@ namespace AreWeThereYet
         private int[] filterTreeLevel;
         private int[] filterParentIndex;
         private Texture2D treeLineTex;
+        private Color[] bodyColors;
         private bool dirty;
         private List<KerbalDestinationParameter> subscribedParams = new List<KerbalDestinationParameter>();
-
         void Start()
         {
             windowID = UnityEngine.Random.Range(1000, 200000);
@@ -69,6 +69,30 @@ namespace AreWeThereYet
             treeLineTex = new Texture2D(1, 1);
             treeLineTex.SetPixel(0, 0, new Color(0.5f, 1f, 1f, 0.5f));
             treeLineTex.Apply();
+
+            Dictionary<string, Color> bodyColorConfig = new Dictionary<string, Color>();
+            foreach (UrlDir.UrlConfig urlConfig in GameDatabase.Instance.GetConfigs("ARE_WE_THERE_YET"))
+            {
+                foreach (ConfigNode node in urlConfig.config.GetNodes("BODY_COLOR"))
+                {
+                    string name = node.GetValue("body");
+                    string[] parts = node.GetValue("color").Split(',');
+                    bodyColorConfig[name] = new Color(
+                        float.Parse(parts[0]), float.Parse(parts[1]),
+                        float.Parse(parts[2]), float.Parse(parts[3]));
+                }
+            }
+
+            int nBodies = FlightGlobals.Bodies.Count;
+            bodyColors = new Color[nBodies];
+            for (int i = 0; i < nBodies; i++)
+            {
+                CelestialBody body = FlightGlobals.Bodies[i];
+                Color c = Color.clear;
+                if (bodyColorConfig.TryGetValue(body.bodyName, out Color cfgColor))
+                    c = cfgColor;
+                bodyColors[i] = c;
+            }
 
             sceneKey = GetSceneKey();
 
@@ -353,15 +377,37 @@ namespace AreWeThereYet
                     int taskIndex = 0;
                     for (int i = 0; i < tourist.Value.Count; i++)
                     {
-                        if (!ShouldShowTask(tourist.Value[i])) continue;
+                        TouristTask task = tourist.Value[i];
+                        if (!ShouldShowTask(task)) continue;
 
                         GUILayout.BeginHorizontal();
+
                         if (taskIndex == 0)
                             GUILayout.Label($"<b>{tourist.Key}</b>", GUILayout.Width(120));
                         else
                             GUILayout.Label("", GUILayout.Width(120));
-                        string color = tourist.Value[i].IsComplete ? "green" : "red";
-                        GUILayout.Label($"<color={color}>•</color> {tourist.Value[i].Description}");
+
+                        string circles = "";
+                        if (task.Body != null && task.Body.flightGlobalsIndex >= 0)
+                        {
+                            Color bodyCol = bodyColors[task.Body.flightGlobalsIndex];
+                            if (bodyCol.a > 0)
+                            {
+                                CelestialBody refBody = task.Body.referenceBody;
+                                if (refBody != null && !refBody.isStar && refBody.flightGlobalsIndex >= 0)
+                                {
+                                    Color refCol = bodyColors[refBody.flightGlobalsIndex];
+                                    if (refCol.a > 0)
+                                        circles = $"<color=#{ColorUtility.ToHtmlStringRGB(refCol)}>●</color> ";
+                                }
+                                circles += $"<color=#{ColorUtility.ToHtmlStringRGB(bodyCol)}>●</color>";
+                            }
+                        }
+                        GUILayout.Label(circles, GUILayout.Width(30));
+
+                        string bulletColor = task.IsComplete ? "green" : "red";
+                        GUILayout.Label($"<color={bulletColor}>•</color> {task.Description}");
+
                         GUILayout.EndHorizontal();
                         taskIndex++;
                     }
@@ -452,7 +498,7 @@ namespace AreWeThereYet
                     // if (branchBot > branchTop)
                     //     GUI.DrawTexture(new Rect(treeX, branchTop, 1, branchBot - branchTop), treeLineTex);
 
-                    GUI.DrawTexture(new Rect(treeX, centerY, textIndent - treeX - 3, 1), treeLineTex);
+                    GUI.DrawTexture(new Rect(treeX + 1, centerY, textIndent - treeX - 4, 1), treeLineTex);
                 }
 
                 var style = (i == selectedFilterIndex) ? filterItemSelectedStyle : filterItemStyle;

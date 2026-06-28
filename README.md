@@ -20,6 +20,12 @@ A **Show completed** checkbox at the top of the window toggles display of comple
 
 A **destination filter** dropdown lets you narrow the list to tasks for a specific planet or moon. Selecting a planet also shows tasks for all its moons.
 
+Colored circles before each task indicate the destination body:
+- One circle (●) for a planet or the Sun — the circle color matches the body's orbit
+- Two circles (● ●) for a moon — the left circle is the parent planet, the right circle is the moon
+
+Colors are defined in `Colors.cfg` and can be customized for any body.
+
 ![Destination filter dropdown](Images/dropdown.png)
 
 ## Installation
@@ -30,6 +36,7 @@ A **destination filter** dropdown lets you narrow the list to tasks for a specif
 
 ```
 GameData/AreWeThereYet/
+├── Colors.cfg
 ├── Plugins/
 │   └── AreWeThereYet.dll
 ├── Textures/
