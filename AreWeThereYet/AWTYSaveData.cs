@@ -49,7 +49,7 @@ namespace AreWeThereYet
 
         public static Vector2 GetPosition(string sceneKey, float windowWidth, float windowHeight)
         {
-            if (Instance == null || !Instance.windowPositions.ContainsKey(sceneKey))
+            if (Instance == null || string.IsNullOrEmpty(sceneKey) || !Instance.windowPositions.ContainsKey(sceneKey))
                 return DefaultPos;
 
             Vector2 pos = Instance.windowPositions[sceneKey];
@@ -60,7 +60,7 @@ namespace AreWeThereYet
 
         public static void SetPosition(string sceneKey, Vector2 pos)
         {
-            if (Instance == null) return;
+            if (Instance == null || string.IsNullOrEmpty(sceneKey)) return;
             Instance.windowPositions[sceneKey] = pos;
         }
     }

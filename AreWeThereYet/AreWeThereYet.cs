@@ -44,6 +44,8 @@ namespace AreWeThereYet
         private int[] filterTreeLevel;
         private int[] filterParentIndex;
         private Texture2D treeLineTex;
+        private Texture2D dropdownBgTex;
+        private GUIStyle dropdownBgStyle;
         private Color[] bodyColors;
         private bool dirty;
         private List<KerbalDestinationParameter> subscribedParams = new List<KerbalDestinationParameter>();
@@ -69,6 +71,10 @@ namespace AreWeThereYet
             treeLineTex = new Texture2D(1, 1);
             treeLineTex.SetPixel(0, 0, new Color(0.5f, 1f, 1f, 0.5f));
             treeLineTex.Apply();
+
+            dropdownBgTex = new Texture2D(1, 1);
+            dropdownBgTex.SetPixel(0, 0, new Color(0f, 0f, 0f, 0.7f));
+            dropdownBgTex.Apply();
 
             Dictionary<string, Color> bodyColorConfig = new Dictionary<string, Color>();
             foreach (UrlDir.UrlConfig urlConfig in GameDatabase.Instance.GetConfigs("ARE_WE_THERE_YET"))
@@ -124,6 +130,8 @@ namespace AreWeThereYet
                 Destroy(filterHoverTex);
             if (treeLineTex != null)
                 Destroy(treeLineTex);
+            if (dropdownBgTex != null)
+                Destroy(dropdownBgTex);
         }
 
         private void OnAppLauncherReady()
@@ -387,26 +395,37 @@ namespace AreWeThereYet
                         else
                             GUILayout.Label("", GUILayout.Width(120));
 
-                        string circles = "";
-                        if (task.Body != null && task.Body.flightGlobalsIndex >= 0)
+                        if (HighLogic.CurrentGame?.Parameters?.CustomParams<AWTYSettings>()?.showBodyIndicators ?? true)
                         {
-                            Color bodyCol = bodyColors[task.Body.flightGlobalsIndex];
-                            if (bodyCol.a > 0)
+                            string circles = "";
+                            if (task.Body != null && task.Body.flightGlobalsIndex >= 0)
                             {
-                                CelestialBody refBody = task.Body.referenceBody;
-                                if (refBody != null && !refBody.isStar && refBody.flightGlobalsIndex >= 0)
+                                Color bodyCol = bodyColors[task.Body.flightGlobalsIndex];
+                                if (bodyCol.a > 0)
                                 {
-                                    Color refCol = bodyColors[refBody.flightGlobalsIndex];
-                                    if (refCol.a > 0)
-                                        circles = $"<color=#{ColorUtility.ToHtmlStringRGB(refCol)}>●</color> ";
+                                    CelestialBody refBody = task.Body.referenceBody;
+                                    if (refBody != null && !refBody.isStar && refBody.flightGlobalsIndex >= 0)
+                                    {
+                                        Color refCol = bodyColors[refBody.flightGlobalsIndex];
+                                        if (refCol.a > 0)
+                                            circles = $"<color=#{ColorUtility.ToHtmlStringRGB(refCol)}>●</color> ";
+                                    }
+                                    circles += $"<color=#{ColorUtility.ToHtmlStringRGB(bodyCol)}>●</color>";
                                 }
-                                circles += $"<color=#{ColorUtility.ToHtmlStringRGB(bodyCol)}>●</color>";
                             }
+                            GUILayout.Label(circles, GUILayout.Width(24));
                         }
-                        GUILayout.Label(circles, GUILayout.Width(30));
 
-                        string bulletColor = task.IsComplete ? "green" : "red";
-                        GUILayout.Label($"<color={bulletColor}>•</color> {task.Description}");
+                        if (task.IsComplete)
+                            GUILayout.Label("<color=#44FF44>✓</color>", GUILayout.Width(10));
+                        else
+                            GUILayout.Label("", GUILayout.Width(10));
+
+                        GUILayout.Label(task.Description);
+
+                        // string icon = task.IsComplete ? "✓" : "✗";
+                        // string iconColor = task.IsComplete ? "#44FF44" : "red";
+                        // GUILayout.Label($"<color={iconColor}>{icon}</color> {task.Description}");
 
                         GUILayout.EndHorizontal();
                         taskIndex++;
@@ -442,6 +461,12 @@ namespace AreWeThereYet
                 filterItemSelectedStyle.normal.textColor = Color.yellow;
             }
 
+            if (dropdownBgStyle == null)
+            {
+                dropdownBgStyle = new GUIStyle(GUI.skin.box);
+                dropdownBgStyle.normal.background = dropdownBgTex;
+            }
+
             float x = dropdownButtonRect.x;
             float y = dropdownButtonRect.y + dropdownButtonRect.height;
             float w = 130;
@@ -451,7 +476,7 @@ namespace AreWeThereYet
             float h = n * lh + padV * 2f;
             Rect areaRect = new Rect(x, y, w, h);
 
-            GUI.Box(areaRect, "", GUI.skin.box);
+            GUI.Box(areaRect, "", dropdownBgStyle);
 
             float treeX = areaRect.x + 6;
             float textIndent = treeX + 10;
@@ -532,7 +557,7 @@ namespace AreWeThereYet
 
         private void RestoreWindowPosition()
         {
-            if (AWTYSaveData.Instance == null) return;
+            if (AWTYSaveData.Instance == null || string.IsNullOrEmpty(sceneKey)) return;
             Vector2 pos = AWTYSaveData.GetPosition(sceneKey, windowRect.width, windowRect.height);
             windowRect.x = pos.x;
             windowRect.y = pos.y;

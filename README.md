@@ -22,7 +22,7 @@ Colored circles before each task indicate the destination body:
 
 Colors are defined in `Colors.cfg` and can be customized for any body.
 
-A **Show completed** checkbox at the top of the window toggles display of completed tasks. Incomplete tasks are marked with a red bullet (•), completed ones with a green bullet (•).
+A **Show completed** checkbox at the top of the window toggles display of completed tasks. Completed tasks are marked with a green checkmark (✓).
 
 A **destination filter** dropdown lets you narrow the list to tasks for a specific planet or moon. Selecting a planet also shows tasks for all its moons.
 
@@ -36,11 +36,11 @@ A **destination filter** dropdown lets you narrow the list to tasks for a specif
 
 ```
 GameData/AreWeThereYet/
-├── Colors.cfg
 ├── Plugins/
 │   └── AreWeThereYet.dll
 ├── Textures/
 │   └── AreWeThereYet.png
+├── Colors.cfg
 ├── LICENSE
 └── README.md
 ```

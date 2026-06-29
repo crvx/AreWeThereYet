@@ -69,6 +69,7 @@
   <ItemGroup>
     <Compile Include="AreWeThereYet.cs" />
     <Compile Include="AWTYSaveData.cs" />
+    <Compile Include="AWTYSettings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
