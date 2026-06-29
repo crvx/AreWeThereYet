@@ -380,6 +380,12 @@ namespace AreWeThereYet
                     if (!hasVisibleTasks) continue;
 
                     var rowStyle = touristIndex % 2 == 0 ? rowEvenStyle : rowOddStyle;
+                    bool allComplete = true;
+                    for (int i = 0; i < tourist.Value.Count; i++)
+                    {
+                        if (!tourist.Value[i].IsComplete) { allComplete = false; break; }
+                    }
+
                     GUILayout.BeginVertical(rowStyle);
 
                     int taskIndex = 0;
@@ -391,7 +397,12 @@ namespace AreWeThereYet
                         GUILayout.BeginHorizontal();
 
                         if (taskIndex == 0)
-                            GUILayout.Label($"<b>{tourist.Key}</b>", GUILayout.Width(120));
+                        {
+                            string nameTag = allComplete
+                                ? $"<color=#44FF44><b>{tourist.Key}</b></color>"
+                                : $"<b>{tourist.Key}</b>";
+                            GUILayout.Label(nameTag, GUILayout.Width(120));
+                        }
                         else
                             GUILayout.Label("", GUILayout.Width(120));
 
