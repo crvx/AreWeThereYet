@@ -81,11 +81,10 @@ namespace AreWeThereYet
             {
                 foreach (ConfigNode node in urlConfig.config.GetNodes("BODY_COLOR"))
                 {
-                    string name = node.GetValue("body");
-                    string[] parts = node.GetValue("color").Split(',');
+                    string name = node.GetValue("name");
                     bodyColorConfig[name] = new Color(
-                        float.Parse(parts[0]), float.Parse(parts[1]),
-                        float.Parse(parts[2]), float.Parse(parts[3]));
+                        float.Parse(node.GetValue("colorR")), float.Parse(node.GetValue("colorG")),
+                        float.Parse(node.GetValue("colorB")), 1f);
                 }
             }
 
@@ -105,6 +104,7 @@ namespace AreWeThereYet
             GameEvents.onGUIApplicationLauncherReady.Add(OnAppLauncherReady);
             GameEvents.onGUIApplicationLauncherDestroyed.Add(OnAppLauncherDestroyed);
             GameEvents.onGameSceneLoadRequested.Add(OnSceneLoadRequested);
+            GameEvents.onVesselPartCountChanged.Add(OnVesselPartCountChanged);
 
             if (ApplicationLauncher.Ready && appButton == null)
                 OnAppLauncherReady();
@@ -120,6 +120,7 @@ namespace AreWeThereYet
             GameEvents.onGUIApplicationLauncherReady.Remove(OnAppLauncherReady);
             GameEvents.onGUIApplicationLauncherDestroyed.Remove(OnAppLauncherDestroyed);
             GameEvents.onGameSceneLoadRequested.Remove(OnSceneLoadRequested);
+            GameEvents.onVesselPartCountChanged.Remove(OnVesselPartCountChanged);
             OnAppLauncherDestroyed();
 
             if (rowEvenStyle != null && rowEvenStyle.normal.background != null)
@@ -584,6 +585,11 @@ namespace AreWeThereYet
         {
             SaveWindowPosition();
             positionRestored = false;
+        }
+
+        private void OnVesselPartCountChanged(Vessel v)
+        {
+            dirty = true;
         }
 
         void Update()

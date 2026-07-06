@@ -28,6 +28,14 @@ A **destination filter** dropdown lets you narrow the list to tasks for a specif
 
 ![Destination filter dropdown](Images/dropdown.png)
 
+## Settings
+
+Open **ESC => Settings => Difficulty Options => Are We There Yet?** to configure:
+
+- **Show destination body indicators** — toggles the colored circles (●) before each task
+
+Body colors can be customized in `GameData/AreWeThereYet/Colors.cfg`.
+
 ## Installation
 
 1. Download the latest release.
