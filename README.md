@@ -6,7 +6,7 @@ Tired of checking each tourist to remember who still needs to go where? This mod
 
 ## How It Works
 
-The mod finds all tourists on the active vessel (or all available tourists in KSC/VAB/SPH) and searches active contracts for their incomplete tasks. Tasks are displayed in a scrollable two-column window.
+The mod finds all tourists on the active vessel (or all available tourists in KSC/VAB/SPH) and searches active contracts for their incomplete tasks. Tasks are displayed in a scrollable window.
 
 The toolbar button is available in **Flight**, **Map View**, **VAB**, **SPH**, and **Space Center** scenes. 
 

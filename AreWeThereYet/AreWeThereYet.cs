@@ -81,10 +81,20 @@ namespace AreWeThereYet
             {
                 foreach (ConfigNode node in urlConfig.config.GetNodes("BODY_COLOR"))
                 {
-                    string name = node.GetValue("name");
-                    bodyColorConfig[name] = new Color(
-                        float.Parse(node.GetValue("colorR")), float.Parse(node.GetValue("colorG")),
-                        float.Parse(node.GetValue("colorB")), 1f);
+                    try
+                    {
+                        string name = node.GetValue("name");
+                        bodyColorConfig[name] = new Color(
+                            float.Parse(node.GetValue("colorR")), 
+                            float.Parse(node.GetValue("colorG")),
+                            float.Parse(node.GetValue("colorB")), 
+                            1f
+                        );
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogError($"[AreWeThereYet] failed to load BODY_COLOR: {ex.Message}");
+                    }
                 }
             }
 
@@ -105,6 +115,7 @@ namespace AreWeThereYet
             GameEvents.onGUIApplicationLauncherDestroyed.Add(OnAppLauncherDestroyed);
             GameEvents.onGameSceneLoadRequested.Add(OnSceneLoadRequested);
             GameEvents.onVesselPartCountChanged.Add(OnVesselPartCountChanged);
+            GameEvents.onVesselChange.Add(OnVesselChange);
 
             if (ApplicationLauncher.Ready && appButton == null)
                 OnAppLauncherReady();
@@ -121,6 +132,7 @@ namespace AreWeThereYet
             GameEvents.onGUIApplicationLauncherDestroyed.Remove(OnAppLauncherDestroyed);
             GameEvents.onGameSceneLoadRequested.Remove(OnSceneLoadRequested);
             GameEvents.onVesselPartCountChanged.Remove(OnVesselPartCountChanged);
+            GameEvents.onVesselChange.Remove(OnVesselChange);
             OnAppLauncherDestroyed();
 
             if (rowEvenStyle != null && rowEvenStyle.normal.background != null)
@@ -588,6 +600,11 @@ namespace AreWeThereYet
         }
 
         private void OnVesselPartCountChanged(Vessel v)
+        {
+            dirty = true;
+        }
+
+        private void OnVesselChange(Vessel v)
         {
             dirty = true;
         }
