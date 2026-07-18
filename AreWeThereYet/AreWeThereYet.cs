@@ -49,6 +49,14 @@ namespace AreWeThereYet
         private Color[] bodyColors;
         private bool dirty;
         private List<KerbalDestinationParameter> subscribedParams = new List<KerbalDestinationParameter>();
+        private int selectedSourceIndex;
+        private List<Vessel> sourceVessels;
+        private List<ProtoVessel> sourceProtoVessels;
+        private string[] sourceNames;
+        private bool showSourceDropdown;
+        private Rect sourceDropdownButtonRect;
+        private Dictionary<VesselType, Texture2D> vesselIcons;
+        private GUIStyle buttonIconStyle;
         void Start()
         {
             windowID = UnityEngine.Random.Range(1000, 200000);
@@ -121,6 +129,17 @@ namespace AreWeThereYet
                 OnAppLauncherReady();
 
             BuildFilterOptions();
+
+            vesselIcons = new Dictionary<VesselType, Texture2D>();
+            string[] vesselTypeNames = Enum.GetNames(typeof(VesselType));
+            for (int i = 0; i < vesselTypeNames.Length; i++)
+            {
+                Texture2D tex = GameDatabase.Instance.GetTexture("AreWeThereYet/Textures/VT" + vesselTypeNames[i], false);
+                if (tex != null)
+                    vesselIcons[(VesselType)Enum.Parse(typeof(VesselType), vesselTypeNames[i])] = tex;
+            }
+
+            BuildSourceOptions();
             positionRestored = false;
         }
 
@@ -145,11 +164,14 @@ namespace AreWeThereYet
                 Destroy(treeLineTex);
             if (dropdownBgTex != null)
                 Destroy(dropdownBgTex);
+            if (vesselIcons != null)
+                vesselIcons.Clear();
         }
 
         private void OnAppLauncherReady()
         {
-            if (appButton != null) return;
+            if (appButton != null)
+                return;
 
             appButton = ApplicationLauncher.Instance.AddModApplication(
                 OnToggleTrue,
@@ -164,15 +186,115 @@ namespace AreWeThereYet
 
         private void OnAppLauncherDestroyed()
         {
-            if (appButton == null) return;
+            if (appButton == null)
+                return;
+
             ApplicationLauncher.Instance.RemoveModApplication(appButton);
             appButton = null;
         }
 
         private void OnToggleTrue()
         {
+            BuildSourceOptions();
             UpdateTouristData();
             isWindowOpen = true;
+
+            // Debug.Log("[AreWeThereYet] === Vessel dump ===");
+            // for (int i = 0; i < FlightGlobals.Vessels.Count; i++)
+            // {
+            //     Vessel v = FlightGlobals.Vessels[i];
+            //     string crewList = "[]";
+            //     if (v.parts != null)
+            //     {
+            //         crewList = "";
+            //         for (int j = 0; j < v.parts.Count; j++)
+            //         {
+            //             Part p = v.parts[j];
+            //             if (p == null || p.protoModuleCrew == null)
+            //                 continue;
+
+            //             for (int k = 0; k < p.protoModuleCrew.Count; k++)
+            //             {
+            //                 ProtoCrewMember c = p.protoModuleCrew[k];
+            //                 if (c == null)
+            //                     continue;
+
+            //                 if (crewList.Length > 0)
+            //                     crewList += ",";
+
+            //                 crewList += c.name + "(" + c.type + ")";
+            //             }
+            //         }
+            //         if (crewList.Length == 0)
+            //             crewList = "[]";
+            //     }
+            //     Debug.Log("[AreWeThereYet]   Vessel: '" + v.vesselName
+            //         + "' loaded=" + v.loaded
+            //         + " parts=" + (v.parts?.Count ?? -1)
+            //         + " crew=[" + crewList + "]"
+            //     );
+            // }
+            // if (HighLogic.CurrentGame?.flightState?.protoVessels != null)
+            // {
+            //     for (int i = 0; i < HighLogic.CurrentGame.flightState.protoVessels.Count; i++)
+            //     {
+            //         ProtoVessel pv = HighLogic.CurrentGame.flightState.protoVessels[i];
+            //         bool inVessels = false;
+            //         for (int j = 0; j < FlightGlobals.Vessels.Count; j++)
+            //         {
+            //             if (FlightGlobals.Vessels[j].vesselName == pv.vesselName)
+            //             { 
+            //                 inVessels = true; 
+            //                 break; 
+            //             }
+            //         }
+
+            //         string crewList = "[]";
+            //         if (pv.protoPartSnapshots != null)
+            //         {
+            //             crewList = "";
+            //             for (int j = 0; j < pv.protoPartSnapshots.Count; j++)
+            //             {
+            //                 ProtoPartSnapshot pps = pv.protoPartSnapshots[j];
+            //                 if (pps == null)
+            //                     continue;
+
+            //                 if (pps.protoModuleCrew != null)
+            //                 {
+            //                     for (int k = 0; k < pps.protoModuleCrew.Count; k++)
+            //                     {
+            //                         ProtoCrewMember c = pps.protoModuleCrew[k];
+            //                         if (c == null)
+            //                             continue;
+
+            //                         if (crewList.Length > 0)
+            //                             crewList += ",";
+                                        
+            //                         crewList += c.name + "(" + c.type + ")";
+            //                     }
+            //                 }
+            //                 else if (pps.protoCrewNames != null)
+            //                 {
+            //                     for (int k = 0; k < pps.protoCrewNames.Count; k++)
+            //                     {
+            //                         if (crewList.Length > 0)
+            //                             crewList += ",";
+
+            //                         crewList += pps.protoCrewNames[k] + "(name)";
+            //                     }
+            //                 }
+            //             }
+            //             if (crewList.Length == 0)
+            //                 crewList = "[]";
+            //         }
+            //         Debug.Log("[AreWeThereYet]   ProtoVessel: '" + pv.vesselName
+            //             + "' inVessels=" + inVessels
+            //             + " parts=" + (pv.protoPartSnapshots?.Count ?? -1)
+            //             + " crew=[" + crewList + "]"
+            //         );
+            //     }
+            // }
+            // Debug.Log("[AreWeThereYet] === End vessel dump ===");
         }
 
         private void OnToggleFalse() => isWindowOpen = false;
@@ -182,33 +304,19 @@ namespace AreWeThereYet
             ClearSubscriptions();
             touristTasks.Clear();
 
-            if (HighLogic.LoadedSceneIsFlight)
+            int kscIdx = HighLogic.LoadedSceneIsFlight ? 1 : 0;
+
+            if (HighLogic.LoadedSceneIsFlight && selectedSourceIndex == 0)
             {
                 Vessel vessel = FlightGlobals.ActiveVessel;
-                if (vessel == null) return;
-
-                for (int i = 0; i < vessel.parts.Count; i++)
-                {
-                    Part part = vessel.parts[i];
-                    if (part.protoModuleCrew == null) continue;
-                    for (int j = 0; j < part.protoModuleCrew.Count; j++)
-                    {
-                        ProtoCrewMember crewMember = part.protoModuleCrew[j];
-                        if (crewMember == null) continue;
-                        if (crewMember.type == ProtoCrewMember.KerbalType.Tourist)
-                        {
-                            List<TouristTask> tasks = new List<TouristTask>();
-                            FindTasksForTourist(crewMember.name, tasks);
-                            if (tasks.Count > 0)
-                                touristTasks[crewMember.name] = tasks;
-                        }
-                    }
-                }
+                if (vessel != null)
+                    CollectTouristsFromVessel(vessel);
             }
-            else
+            else if (selectedSourceIndex == kscIdx)
             {
                 foreach (ProtoCrewMember tourist in HighLogic.CurrentGame.CrewRoster.Kerbals(
-                    ProtoCrewMember.KerbalType.Tourist, ProtoCrewMember.RosterStatus.Available))
+                    ProtoCrewMember.KerbalType.Tourist, ProtoCrewMember.RosterStatus.Available
+                ))
                 {
                     List<TouristTask> tasks = new List<TouristTask>();
                     FindTasksForTourist(tourist.name, tasks);
@@ -216,23 +324,302 @@ namespace AreWeThereYet
                         touristTasks[tourist.name] = tasks;
                 }
             }
+            else if (sourceVessels != null && selectedSourceIndex >= 0 && selectedSourceIndex < sourceVessels.Count)
+            {
+                Vessel vessel = sourceVessels[selectedSourceIndex];
+                bool vesselUsable = vessel != null && vessel.loaded && vessel.parts != null && vessel.parts.Count > 0;
+                if (vesselUsable)
+                {
+                    CollectTouristsFromVessel(vessel);
+                }
+                else if (sourceProtoVessels != null && selectedSourceIndex < sourceProtoVessels.Count)
+                {
+                    ProtoVessel pv = sourceProtoVessels[selectedSourceIndex];
+                    if (pv != null)
+                        CollectTouristsFromProtoVessel(pv);
+                }
+            }
+        }
+
+        private void CollectTouristsFromVessel(Vessel vessel)
+        {
+            if (vessel.parts == null)
+                return;
+
+            for (int i = 0; i < vessel.parts.Count; i++)
+            {
+                Part part = vessel.parts[i];
+                if (part == null || part.protoModuleCrew == null)
+                    continue;
+
+                for (int j = 0; j < part.protoModuleCrew.Count; j++)
+                {
+                    ProtoCrewMember crewMember = part.protoModuleCrew[j];
+                    if (crewMember == null)
+                        continue;
+
+                    if (crewMember.type == ProtoCrewMember.KerbalType.Tourist)
+                    {
+                        List<TouristTask> tasks = new List<TouristTask>();
+                        FindTasksForTourist(crewMember.name, tasks);
+                        if (tasks.Count > 0)
+                            touristTasks[crewMember.name] = tasks;
+                    }
+                }
+            }
+        }
+
+        private void CollectTouristsFromProtoVessel(ProtoVessel pv)
+        {
+            if (pv.protoPartSnapshots == null)
+                return;
+
+            for (int i = 0; i < pv.protoPartSnapshots.Count; i++)
+            {
+                CollectTouristsFromProtoPartSnapshot(pv.protoPartSnapshots[i]);
+            }
+        }
+
+        private void CollectTouristsFromProtoPartSnapshot(ProtoPartSnapshot pps)
+        {
+            if (pps == null)
+                return;
+
+            if (pps.protoModuleCrew != null)
+            {
+                for (int j = 0; j < pps.protoModuleCrew.Count; j++)
+                {
+                    ProtoCrewMember crewMember = pps.protoModuleCrew[j];
+                    if (crewMember == null || crewMember.type != ProtoCrewMember.KerbalType.Tourist)
+                        continue;
+
+                    List<TouristTask> tasks = new List<TouristTask>();
+                    FindTasksForTourist(crewMember.name, tasks);
+                    if (tasks.Count > 0)
+                        touristTasks[crewMember.name] = tasks;
+                }
+            }
+            else if (pps.protoCrewNames != null)
+            {
+                for (int j = 0; j < pps.protoCrewNames.Count; j++)
+                {
+                    ProtoCrewMember crewMember = FindCrewByName(pps.protoCrewNames[j]);
+                    if (crewMember == null || crewMember.type != ProtoCrewMember.KerbalType.Tourist)
+                        continue;
+
+                    List<TouristTask> tasks = new List<TouristTask>();
+                    FindTasksForTourist(crewMember.name, tasks);
+                    if (tasks.Count > 0)
+                        touristTasks[crewMember.name] = tasks;
+                }
+            }
+        }
+
+        private void BuildSourceOptions()
+        {
+            List<Vessel> vessels = new List<Vessel>();
+            List<string> names = new List<string>();
+
+            if (HighLogic.LoadedSceneIsFlight)
+            {
+                vessels.Add(null);
+                names.Add("Active Vessel");
+            }
+
+            vessels.Add(null);
+            names.Add("KSC");
+
+            List<string> sortNames = new List<string>();
+            List<Vessel> sortVessels = new List<Vessel>();
+            List<ProtoVessel> sortProtoVessels = new List<ProtoVessel>();
+
+            if (HighLogic.LoadedSceneIsFlight)
+            {
+                for (int i = 0; i < FlightGlobals.Vessels.Count; i++)
+                {
+                    try
+                    {
+                        Vessel v = FlightGlobals.Vessels[i];
+                        if (v == FlightGlobals.ActiveVessel || !HasTouristWithMatchingTask(v))
+                            continue;
+
+                        sortVessels.Add(v);
+                        sortNames.Add(v.vesselName);
+                        sortProtoVessels.Add(null);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogError($"[AreWeThereYet] BuildSourceOptions vessel error: {ex.Message}");
+                    }
+                }
+            }
+
+            if (HighLogic.CurrentGame?.flightState?.protoVessels != null)
+            {
+                for (int i = 0; i < HighLogic.CurrentGame.flightState.protoVessels.Count; i++)
+                {
+                    try
+                    {
+                        ProtoVessel pv = HighLogic.CurrentGame.flightState.protoVessels[i];
+                        if (HighLogic.LoadedSceneIsFlight && pv.vesselName == FlightGlobals.ActiveVessel?.vesselName)
+                            continue;
+
+                        if (sortNames.Contains(pv.vesselName))
+                            continue;
+
+                        bool hasTourist = HasTouristOnProtoVessel(pv);
+                        if (!hasTourist)
+                            continue;
+
+                        Vessel match = null;
+                        for (int j = 0; j < FlightGlobals.Vessels.Count; j++)
+                        {
+                            if (FlightGlobals.Vessels[j].vesselName == pv.vesselName)
+                            {
+                                match = FlightGlobals.Vessels[j];
+                                break;
+                            }
+                        }
+                        sortVessels.Add(match);
+                        sortNames.Add(pv.vesselName);
+                        sortProtoVessels.Add(pv);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogError("[AreWeThereYet] BuildSourceOptions protoVessel error: " + ex.Message);
+                    }
+                }
+            }
+
+            for (int i = 0; i < sortNames.Count; i++)
+            {
+                for (int j = i + 1; j < sortNames.Count; j++)
+                {
+                    if (string.Compare(sortNames[i], sortNames[j], StringComparison.Ordinal) > 0)
+                    {
+                        string tmpN = sortNames[i];
+                        sortNames[i] = sortNames[j];
+                        sortNames[j] = tmpN;
+                        Vessel tmpV = sortVessels[i];
+                        sortVessels[i] = sortVessels[j];
+                        sortVessels[j] = tmpV;
+                        ProtoVessel tmpP = sortProtoVessels[i];
+                        sortProtoVessels[i] = sortProtoVessels[j];
+                        sortProtoVessels[j] = tmpP;
+                    }
+                }
+            }
+
+            for (int i = 0; i < sortNames.Count; i++)
+            {
+                vessels.Add(sortVessels[i]);
+                names.Add(sortNames[i]);
+            }
+
+            int kscIdx = HighLogic.LoadedSceneIsFlight ? 1 : 0;
+            sourceProtoVessels = new List<ProtoVessel>(vessels.Count);
+            for (int i = 0; i <= kscIdx; i++)
+                sourceProtoVessels.Add(null);
+            for (int i = 0; i < sortNames.Count; i++)
+                sourceProtoVessels.Add(sortProtoVessels[i]);
+
+            sourceVessels = vessels;
+            sourceNames = names.ToArray();
+
+            if (selectedSourceIndex >= sourceNames.Length)
+                selectedSourceIndex = kscIdx;
+        }
+
+        private bool HasTouristOnProtoVessel(ProtoVessel pv)
+        {
+            if (pv.protoPartSnapshots == null)
+                return false;
+
+            for (int i = 0; i < pv.protoPartSnapshots.Count; i++)
+            {
+                ProtoPartSnapshot pps = pv.protoPartSnapshots[i];
+                if (pps == null)
+                    continue;
+
+                if (pps.protoModuleCrew != null)
+                {
+                    for (int j = 0; j < pps.protoModuleCrew.Count; j++)
+                    {
+                        ProtoCrewMember crew = pps.protoModuleCrew[j];
+                        if (crew != null && crew.type == ProtoCrewMember.KerbalType.Tourist)
+                            return true;
+                    }
+                }
+                else if (pps.protoCrewNames != null)
+                {
+                    for (int j = 0; j < pps.protoCrewNames.Count; j++)
+                    {
+                        ProtoCrewMember crew = FindCrewByName(pps.protoCrewNames[j]);
+                        if (crew != null && crew.type == ProtoCrewMember.KerbalType.Tourist)
+                            return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private ProtoCrewMember FindCrewByName(string name)
+        {
+            var roster = HighLogic.CurrentGame?.CrewRoster;
+            if (roster == null)
+                return null;
+
+            foreach (ProtoCrewMember c in roster.Crew)
+            {
+                if (c.name == name)
+                    return c;
+            }
+
+            return null;
+        }
+
+        private bool HasTouristWithMatchingTask(Vessel v)
+        {
+            if (v.parts == null)
+                return false;
+
+            for (int i = 0; i < v.parts.Count; i++)
+            {
+                Part part = v.parts[i];
+                if (part == null || part.protoModuleCrew == null)
+                    continue;
+
+                for (int j = 0; j < part.protoModuleCrew.Count; j++)
+                {
+                    ProtoCrewMember crew = part.protoModuleCrew[j];
+                    if (crew != null && crew.type == ProtoCrewMember.KerbalType.Tourist)
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         private void FindTasksForTourist(string name, List<TouristTask> tasks)
         {
-            if (ContractSystem.Instance == null) return;
+            if (ContractSystem.Instance == null)
+                return;
 
             foreach (Contract contract in ContractSystem.Instance.Contracts)
             {
-                if (contract.ContractState != Contract.State.Active) continue;
+                if (contract.ContractState != Contract.State.Active)
+                    continue;
 
                 foreach (ContractParameter param in contract.AllParameters)
                 {
                     KerbalDestinationParameter dest = param as KerbalDestinationParameter;
-                    if (dest == null) continue;
-                    if (dest.kerbalName != name) continue;
-                    if (!showComplete && dest.State != ParameterState.Incomplete) continue;
-                    if (showComplete && dest.State != ParameterState.Incomplete && dest.State != ParameterState.Complete) continue;
+                    if (dest == null || dest.kerbalName != name)
+                        continue;
+                    if (!showComplete && dest.State != ParameterState.Incomplete)
+                        continue;
+                    if (showComplete && dest.State != ParameterState.Incomplete && dest.State != ParameterState.Complete)
+                        continue;
 
                     string bodyName = dest.targetBody.displayName.Replace("^N", "");
                     tasks.Add(new TouristTask
@@ -329,9 +716,11 @@ namespace AreWeThereYet
 
         private bool ShouldShowTask(TouristTask task)
         {
-            if (selectedFilterIndex <= 0) return true;
+            if (selectedFilterIndex <= 0)
+                return true;
             CelestialBody filterBody = filterBodies[selectedFilterIndex];
-            if (filterBody == null) return true;
+            if (filterBody == null)
+                return true;
             if (filterIsPlanet[selectedFilterIndex])
                 return task.Body == filterBody || task.Body.referenceBody == filterBody;
             return task.Body == filterBody;
@@ -356,16 +745,69 @@ namespace AreWeThereYet
         {
             GUILayout.BeginVertical();
 
-            GUILayout.BeginHorizontal();
             bool newShowComplete = GUILayout.Toggle(showComplete, "Show completed");
             if (newShowComplete != showComplete)
             {
                 showComplete = newShowComplete;
                 UpdateTouristData();
             }
+
+            if (buttonIconStyle == null)
+            {
+                buttonIconStyle = new GUIStyle(GUI.skin.button);
+                buttonIconStyle.imagePosition = ImagePosition.ImageLeft;
+                buttonIconStyle.richText = true;
+                buttonIconStyle.fixedHeight = 24;
+                buttonIconStyle.padding.top = 2;
+                buttonIconStyle.padding.bottom = 2;
+            }
+
+            GUILayout.BeginHorizontal();
+            {
+                string srcLabel = selectedSourceIndex < sourceNames.Length
+                    ? sourceNames[selectedSourceIndex] : "KSC";
+
+                Texture2D srcIcon = null;
+                if (HighLogic.LoadedSceneIsFlight && selectedSourceIndex == 0)
+                {
+                    if (FlightGlobals.ActiveVessel != null)
+                        vesselIcons.TryGetValue(FlightGlobals.ActiveVessel.vesselType, out srcIcon);
+                }
+                else if (sourceVessels != null && selectedSourceIndex < sourceVessels.Count)
+                {
+                    Vessel v = sourceVessels[selectedSourceIndex];
+                    if (v != null)
+                        vesselIcons.TryGetValue(v.vesselType, out srcIcon);
+                }
+
+                string soiCircles = GetSoiIndicatorString(selectedSourceIndex);
+                string btnLabel = srcLabel + " ▼";
+                if (!string.IsNullOrEmpty(soiCircles))
+                    btnLabel = soiCircles + " " + btnLabel;
+
+                GUIContent btnContent = srcIcon != null
+                    ? new GUIContent(btnLabel, srcIcon)
+                    : new GUIContent(btnLabel);
+
+                if (GUILayout.Button(btnContent, buttonIconStyle, GUILayout.Width(200)))
+                {
+                    showSourceDropdown = !showSourceDropdown;
+                    if (showFilterDropdown)
+                        showFilterDropdown = false;
+                }
+
+                if (Event.current.type == EventType.Repaint)
+                    sourceDropdownButtonRect = GUILayoutUtility.GetLastRect();
+            }
+
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button(filterDisplayNamesClean[selectedFilterIndex] + " ▼", GUILayout.Width(130)))
+            if (GUILayout.Button(filterDisplayNamesClean[selectedFilterIndex] + " ▼", buttonIconStyle, GUILayout.Width(130)))
+            {
                 showFilterDropdown = !showFilterDropdown;
+                if (showSourceDropdown)
+                    showSourceDropdown = false;
+            }
+            
             if (Event.current.type == EventType.Repaint)
                 dropdownButtonRect = GUILayoutUtility.GetLastRect();
             GUILayout.EndHorizontal();
@@ -390,13 +832,18 @@ namespace AreWeThereYet
                             break;
                         }
                     }
-                    if (!hasVisibleTasks) continue;
+                    if (!hasVisibleTasks)
+                        continue;
 
                     var rowStyle = touristIndex % 2 == 0 ? rowEvenStyle : rowOddStyle;
                     bool allComplete = true;
                     for (int i = 0; i < tourist.Value.Count; i++)
                     {
-                        if (!tourist.Value[i].IsComplete) { allComplete = false; break; }
+                        if (!tourist.Value[i].IsComplete)
+                        {
+                            allComplete = false;
+                            break;
+                        }
                     }
 
                     GUILayout.BeginVertical(rowStyle);
@@ -405,7 +852,8 @@ namespace AreWeThereYet
                     for (int i = 0; i < tourist.Value.Count; i++)
                     {
                         TouristTask task = tourist.Value[i];
-                        if (!ShouldShowTask(task)) continue;
+                        if (!ShouldShowTask(task))
+                            continue;
 
                         GUILayout.BeginHorizontal();
 
@@ -421,22 +869,7 @@ namespace AreWeThereYet
 
                         if (HighLogic.CurrentGame?.Parameters?.CustomParams<AWTYSettings>()?.showBodyIndicators ?? true)
                         {
-                            string circles = "";
-                            if (task.Body != null && task.Body.flightGlobalsIndex >= 0)
-                            {
-                                Color bodyCol = bodyColors[task.Body.flightGlobalsIndex];
-                                if (bodyCol.a > 0)
-                                {
-                                    CelestialBody refBody = task.Body.referenceBody;
-                                    if (refBody != null && !refBody.isStar && refBody.flightGlobalsIndex >= 0)
-                                    {
-                                        Color refCol = bodyColors[refBody.flightGlobalsIndex];
-                                        if (refCol.a > 0)
-                                            circles = $"<color=#{ColorUtility.ToHtmlStringRGB(refCol)}>●</color> ";
-                                    }
-                                    circles += $"<color=#{ColorUtility.ToHtmlStringRGB(bodyCol)}>●</color>";
-                                }
-                            }
+                            string circles = BuildBodyCircles(task.Body);
                             GUILayout.Label(circles, GUILayout.Width(24));
                         }
 
@@ -466,6 +899,9 @@ namespace AreWeThereYet
 
             if (showFilterDropdown)
                 DrawFilterDropdown();
+
+            if (showSourceDropdown)
+                DrawSourceDropdown();
 
             GUI.DragWindow();
         }
@@ -509,16 +945,19 @@ namespace AreWeThereYet
 
             for (int i = 0; i < n; i++)
             {
-                if (filterTreeLevel[i] != 1) continue;
+                if (filterTreeLevel[i] != 1)
+                    continue;
                 int planetIdx = i;
                 int firstMoon = -1;
                 int lastMoon = -1;
                 for (int j = i + 1; j < n && filterTreeLevel[j] == 2; j++)
                 {
-                    if (firstMoon < 0) firstMoon = j;
+                    if (firstMoon < 0)
+                        firstMoon = j;
                     lastMoon = j;
                 }
-                if (firstMoon < 0) continue;
+                if (firstMoon < 0)
+                    continue;
 
                 float topY = areaRect.y + padV + planetIdx * lh + lh;
                 float botY = areaRect.y + padV + lastMoon * lh + lh / 2f;
@@ -556,18 +995,187 @@ namespace AreWeThereYet
                 if (hovered && Event.current.type == EventType.MouseDown && Event.current.button == 0)
                 {
                     newIndex = i;
-                    Event.current.Use();
                 }
             }
 
-            if (newIndex != selectedFilterIndex)
+            if (Event.current.type == EventType.MouseDown)
             {
-                selectedFilterIndex = newIndex;
-                showFilterDropdown = false;
+                if (areaRect.Contains(Event.current.mousePosition))
+                {
+                    if (newIndex != selectedFilterIndex)
+                    {
+                        selectedFilterIndex = newIndex;
+                        dirty = true;
+                    }
+                    showFilterDropdown = false;
+                    Event.current.Use();
+                }
+                else
+                {
+                    showFilterDropdown = false;
+                }
+            }
+        }
+
+        private string BuildBodyCircles(CelestialBody body)
+        {
+            if (body == null || body.flightGlobalsIndex < 0)
+                return "";
+
+            Color bodyCol = bodyColors[body.flightGlobalsIndex];
+            if (bodyCol.a <= 0)
+                return "";
+
+            string circles = "";
+            CelestialBody refBody = body.referenceBody;
+            if (refBody != null && !refBody.isStar && refBody.flightGlobalsIndex >= 0)
+            {
+                Color refCol = bodyColors[refBody.flightGlobalsIndex];
+                if (refCol.a > 0)
+                    circles = $"<color=#{ColorUtility.ToHtmlStringRGB(refCol)}>●</color> ";
+            }
+            circles += $"<color=#{ColorUtility.ToHtmlStringRGB(bodyCol)}>●</color>";
+
+            return circles;
+        }
+
+        private string GetSoiIndicatorString(int sourceIndex)
+        {
+            CelestialBody body = null;
+
+            if (HighLogic.LoadedSceneIsFlight && sourceIndex == 0)
+            {
+                if (FlightGlobals.ActiveVessel != null)
+                    body = FlightGlobals.ActiveVessel.mainBody;
+            }
+            else if (sourceVessels != null && sourceIndex < sourceVessels.Count)
+            {
+                Vessel v = sourceVessels[sourceIndex];
+                if (v != null)
+                {
+                    body = v.mainBody;
+                }
+                else if (sourceProtoVessels != null && sourceIndex < sourceProtoVessels.Count)
+                {
+                    ProtoVessel pv = sourceProtoVessels[sourceIndex];
+                    if (pv != null && pv.orbitSnapShot != null)
+                    {
+                        int refBodyIdx = pv.orbitSnapShot.ReferenceBodyIndex;
+                        if (refBodyIdx >= 0 && refBodyIdx < FlightGlobals.Bodies.Count)
+                            body = FlightGlobals.Bodies[refBodyIdx];
+                    }
+                }
             }
 
-            if (Event.current.type == EventType.MouseDown && !areaRect.Contains(Event.current.mousePosition))
-                showFilterDropdown = false;
+            string circles = BuildBodyCircles(body);
+            if (string.IsNullOrEmpty(circles))
+                return "";
+
+            return " " + circles;
+        }
+
+        private void DrawSourceDropdown()
+        {
+            if (filterItemStyle == null)
+            {
+                filterItemStyle = new GUIStyle(GUI.skin.label);
+                filterItemStyle.alignment = TextAnchor.MiddleLeft;
+                filterItemStyle.padding = new RectOffset(0, 0, 0, 0);
+                filterItemStyle.margin = new RectOffset(0, 0, 0, 0);
+                filterItemSelectedStyle = new GUIStyle(GUI.skin.label);
+                filterItemSelectedStyle.alignment = TextAnchor.MiddleLeft;
+                filterItemSelectedStyle.padding = new RectOffset(0, 0, 0, 0);
+                filterItemSelectedStyle.margin = new RectOffset(0, 0, 0, 0);
+                filterItemSelectedStyle.normal.textColor = Color.yellow;
+                filterItemStyle.richText = true;
+                filterItemSelectedStyle.richText = true;
+            }
+
+            if (dropdownBgStyle == null)
+            {
+                dropdownBgStyle = new GUIStyle(GUI.skin.box);
+                dropdownBgStyle.normal.background = dropdownBgTex;
+            }
+
+            float x = sourceDropdownButtonRect.x;
+            float y = sourceDropdownButtonRect.y + sourceDropdownButtonRect.height;
+            float w = sourceDropdownButtonRect.width;
+            float lh = 18;
+            float padV = 2;
+            float iconSize = 20;
+            int n = sourceNames.Length;
+            float h = n * lh + padV * 2f;
+            Rect areaRect = new Rect(x, y, w, h);
+
+            GUI.Box(areaRect, "", dropdownBgStyle);
+
+            int newIndex = selectedSourceIndex;
+
+            for (int i = 0; i < n; i++)
+            {
+                float itemY = areaRect.y + padV + i * lh;
+                float iconX = areaRect.x + 6;
+                float circlesX = iconX + iconSize + 4;
+                float circlesW = 32;
+                float textX = circlesX + circlesW + 4;
+                float itemW = areaRect.x + w - padV - textX;
+                Rect textRect = new Rect(textX, itemY, itemW, lh);
+                Rect fullRect = new Rect(areaRect.x + padV, itemY, w - padV * 2, lh);
+                bool hovered = fullRect.Contains(Event.current.mousePosition);
+
+                if (hovered)
+                    GUI.DrawTexture(fullRect, filterHoverTex);
+
+                Vessel v = sourceVessels[i];
+                if (v != null)
+                {
+                    Texture2D icon;
+                    if (vesselIcons.TryGetValue(v.vesselType, out icon))
+                        GUI.DrawTexture(new Rect(iconX, itemY + (lh - iconSize) / 2f, iconSize, iconSize), icon);
+                }
+
+                if (HighLogic.CurrentGame?.Parameters?.CustomParams<AWTYSettings>()?.showBodyIndicators ?? true)
+                {
+                    string soiCircles = GetSoiIndicatorString(i);
+                    if (!string.IsNullOrEmpty(soiCircles))
+                        GUI.Label(new Rect(circlesX, itemY, circlesW, lh), soiCircles, filterItemStyle);
+                }
+
+                var style = (i == selectedSourceIndex) ? filterItemSelectedStyle : filterItemStyle;
+                GUI.Label(textRect, sourceNames[i], style);
+
+                if (hovered && Event.current.type == EventType.MouseDown && Event.current.button == 0)
+                {
+                    newIndex = i;
+                }
+            }
+
+            if (Event.current.type == EventType.MouseDown)
+            {
+                // Debug.Log("[AreWeThereYet] DrawSourceDropdown: MouseDown event"
+                //     + " mousePos=" + Event.current.mousePosition
+                //     + " areaRect=" + areaRect
+                //     + " contains=" + areaRect.Contains(Event.current.mousePosition)
+                //     + " newIndex=" + newIndex
+                //     + " selectedSourceIndex=" + selectedSourceIndex
+                //     + " showSourceDropdown=" + showSourceDropdown);
+                if (areaRect.Contains(Event.current.mousePosition))
+                {
+                    if (newIndex != selectedSourceIndex)
+                    {
+                        selectedSourceIndex = newIndex;
+                        dirty = true;
+                        // Debug.Log("[AreWeThereYet] DrawSourceDropdown: SET selectedSourceIndex=" + selectedSourceIndex);
+                    }
+                    showSourceDropdown = false;
+                    Event.current.Use();
+                }
+                else
+                {
+                    showSourceDropdown = false;
+                    // Debug.Log("[AreWeThereYet] DrawSourceDropdown: click outside, closing");
+                }
+            }
         }
 
         private static string GetSceneKey()
@@ -581,7 +1189,8 @@ namespace AreWeThereYet
 
         private void RestoreWindowPosition()
         {
-            if (AWTYSaveData.Instance == null || string.IsNullOrEmpty(sceneKey)) return;
+            if (AWTYSaveData.Instance == null || string.IsNullOrEmpty(sceneKey))
+                return;
             Vector2 pos = AWTYSaveData.GetPosition(sceneKey, windowRect.width, windowRect.height);
             windowRect.x = pos.x;
             windowRect.y = pos.y;
@@ -589,7 +1198,8 @@ namespace AreWeThereYet
 
         private void SaveWindowPosition()
         {
-            if (AWTYSaveData.Instance == null) return;
+            if (AWTYSaveData.Instance == null)
+                return;
             AWTYSaveData.SetPosition(sceneKey, new Vector2(windowRect.x, windowRect.y));
         }
 
@@ -613,7 +1223,8 @@ namespace AreWeThereYet
         {
             if (!positionRestored)
             {
-                if (AWTYSaveData.Instance == null || !AWTYSaveData.Instance.dataReady) return;
+                if (AWTYSaveData.Instance == null || !AWTYSaveData.Instance.dataReady)
+                    return;
                 RestoreWindowPosition();
                 positionRestored = true;
             }
@@ -621,6 +1232,7 @@ namespace AreWeThereYet
             if (dirty && isWindowOpen)
             {
                 dirty = false;
+                BuildSourceOptions();
                 UpdateTouristData();
             }
         }
@@ -633,7 +1245,9 @@ namespace AreWeThereYet
         private void ClearSubscriptions()
         {
             for (int i = 0; i < subscribedParams.Count; i++)
+            {
                 subscribedParams[i].OnStateChange.Remove(OnParameterStateChange);
+            }
             subscribedParams.Clear();
         }
     }

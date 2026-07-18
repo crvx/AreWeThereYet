@@ -60,7 +60,8 @@ namespace AreWeThereYet
 
         public static void SetPosition(string sceneKey, Vector2 pos)
         {
-            if (Instance == null || string.IsNullOrEmpty(sceneKey)) return;
+            if (Instance == null || string.IsNullOrEmpty(sceneKey))
+                return;
             Instance.windowPositions[sceneKey] = pos;
         }
     }
